@@ -914,7 +914,7 @@ describe('selectConnection', () => {
       expect(ensureGatewayAgent).not.toHaveBeenCalled()
 
       // Descriptor never arrives; deadline elapses.
-      await vi.advanceTimersByTimeAsync(BACKEND_BOOT_WAIT_TIMEOUT_MS + 15_000)
+      await vi.advanceTimersByTimeAsync(BACKEND_BOOT_WAIT_TIMEOUT_MS)
       await restoring
 
       expect(ensureGatewayAgent).toHaveBeenCalledWith('homelab', 'default', expect.anything())
