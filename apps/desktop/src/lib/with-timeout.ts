@@ -1,16 +1,29 @@
 import { resolveRendererBootWaitMs } from '../../../shared/src/desktop-boot-budget'
 
-/** Shared budget for any renderer await that rides out a primary backend
- * cold boot (initial getConnection(), the registry restore's descriptor
- * wait). Covers main's default cold-start chain (desktop-boot-budget.ts):
- * port announce, health poll, and a margin for the work around them, so the
- * IPC is still in flight when a slow but healthy backend publishes. The bound
- * stays finite so a dead or wedged backend ends in the recovery overlay
- * instead of spinning. Main answers the announce deadline it resolved
+/** Budget for the renderer awaits that can be waiting on a backend cold
+ * spawn's whole chain — boot-class callers only. Three sites, all named
+ * here so a new caller must decide which class it is:
+ *   1. initial boot()'s getConnection() (use-gateway-boot.ts) — the primary
+ *      cold spawn this is sized for;
+ *   2. a profile/connection switch whose ensureBackend may cold-spawn a
+ *      pooled helper (use-gateway-boot.ts) — same chain;
+ *   3. the registry restore's descriptor wait (connections.ts) — resolves
+ *      only when boot() publishes, so it is a parallel view of site 1.
+ *
+ * Sized by main's cold-start chain (desktop-boot-budget.ts): port announce,
+ * health poll, and a margin for the work around them, so the IPC is still
+ * in flight when a slow but healthy backend publishes. The accepted cost: a
+ * wedged main-process round-trip at boot also takes this long to surface the
+ * recovery overlay — the same trade main made raising the readiness poll to
+ * 180s (#63454). The bound stays finite, so it ends.
+ *
+ * Main answers the announce deadline it resolved
  * (HERMES_DESKTOP_PORT_ANNOUNCE_TIMEOUT_MS included) through preload before
- * this module loads, so an override stretches both sides; no bridge falls
- * back to the default. Reconnect-class awaits against an already-spawned
- * backend use the shorter RECONNECT_ATTEMPT_TIMEOUT_MS below instead. */
+ * this module loads, so an override stretches both sides. The
+ * undefined-window case (SSR, tests without a bridge) falls back to the
+ * default deadline; the packaged app always reads the value main resolved.
+ * Awaits against an already-spawned backend are reconnect-class and use
+ * the shorter RECONNECT_ATTEMPT_TIMEOUT_MS below instead. */
 export const BACKEND_BOOT_WAIT_TIMEOUT_MS = resolveRendererBootWaitMs(
   typeof window === 'undefined' ? undefined : window.hermesDesktop?.portAnnounceTimeoutMs
 )
@@ -19,7 +32,9 @@ export const BACKEND_BOOT_WAIT_TIMEOUT_MS = resolveRendererBootWaitMs(
 // resolveGatewayWsUrl() are IPC round-trips into the main process with no
 // timeout of their own (#93454). A wedged main-process round-trip (e.g. a
 // stuck revalidation after a liveness-probe trip) otherwise hangs an awaiting
-// caller forever. Every caller of these bounds them with this shared budget.
+// caller forever. Reconnect-class callers bound them with this budget;
+// boot-class callers (see BACKEND_BOOT_WAIT_TIMEOUT_MS above) with the wider
+// cold-spawn budget.
 export const RECONNECT_ATTEMPT_TIMEOUT_MS = 20_000
 
 /** Rejection raised by withTimeout. The bounded work is NOT cancelled — the
