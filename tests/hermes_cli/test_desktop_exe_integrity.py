@@ -205,6 +205,15 @@ def test_expected_machines_prefers_user_runnable_api_over_arch_name(monkeypatch)
 # ─── _desktop_packaged_executable arch preference (win32) ───────────────────
 
 
+@pytest.mark.platforms("linux")
+def test_packaged_cozy_executable_is_discovered(tmp_path):
+    executable = tmp_path / "release" / "linux-unpacked" / "Cozy"
+    executable.parent.mkdir(parents=True)
+    executable.write_bytes(b"fixture")
+
+    assert main_desktop._desktop_packaged_executable_in(tmp_path / "release") == executable
+
+
 
 
 

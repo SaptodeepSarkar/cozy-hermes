@@ -137,14 +137,22 @@ def _desktop_packaged_executable_in(release_dir: Path) -> Optional[Path]:
     stage-and-swap staging dir (#86443).
     """
     if sys.platform == "darwin":
-        candidates = list(release_dir.glob("mac*/Hermes.app/Contents/MacOS/Hermes"))
+        candidates = [
+            path
+            for product in ("Cozy", "Hermes")
+            for path in release_dir.glob(f"mac*/{product}.app/Contents/MacOS/{product}")
+        ]
     elif sys.platform == "win32":
         candidates = [
-            release_dir / d / "Hermes.exe" for d in ("win-unpacked", "win-ia32-unpacked", "win-arm64-unpacked")
+            release_dir / directory / f"{product}.exe"
+            for directory in ("win-unpacked", "win-ia32-unpacked", "win-arm64-unpacked")
+            for product in ("Cozy", "Hermes")
         ]
     else:
         candidates = [
-            release_dir / d / n for d in ("linux-unpacked", "linux-arm64-unpacked") for n in ("hermes", "Hermes")
+            release_dir / directory / executable
+            for directory in ("linux-unpacked", "linux-arm64-unpacked")
+            for executable in ("cozy", "Cozy", "hermes", "Hermes")
         ]
 
     existing = [p for p in candidates if p.exists()]
@@ -1812,5 +1820,4 @@ def _launch_bundled_desktop(
     pid = launch_detached(launch_command, env=env, cwd=layout.app_root)
     print(f"→ Launched Hermes Desktop: {' '.join(launch_command)} (pid {pid})")
     sys.exit(0)
-
 
