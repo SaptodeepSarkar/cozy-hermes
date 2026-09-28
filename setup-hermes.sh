@@ -185,7 +185,7 @@ pm_args=()
 for extra in ${_runtime_extra_names[@]-}; do
   [ -n "$extra" ] && pm_args+=(--extra "$extra")
 done
-[ "$runtime_only" = true ] && pm_args+=(--trust-recorded)
+[ "$runtime_only" = true ] && [ -z "$runtime_extras" ] && pm_args+=(--trust-recorded)
 if ! "$boot_py" -m pm.cli install "${pm_args[@]}"; then
     echo -e "${RED}✗${NC} pm install failed — see output above."
     exit 1
