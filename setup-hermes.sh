@@ -177,7 +177,10 @@ boot_py="$("$uv" python find --managed-python "$py_request")"
 boot_py="${boot_py%$'\r'}"
 # Activation trusts the recorded tool digest; a direct setup re-checks it
 # (setup-hermes.ps1 draws the same line).
-pm_args=("$test_environment")
+pm_args=()
+# A runtime-only selection intentionally builds the requested feature closure
+# without creating the much larger isolated test environment.
+[ -z "$runtime_extras" ] && pm_args+=("$test_environment")
 [ -n "$runtime_extras" ] && IFS=',' read -r -a _runtime_extra_names <<< "$runtime_extras"
 for extra in ${_runtime_extra_names[@]-}; do
   [ -n "$extra" ] && pm_args+=(--extra "$extra")
