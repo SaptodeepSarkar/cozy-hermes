@@ -1,6 +1,6 @@
 // The desktop product identity — THE single source for every name-shaped
-// value a variant owns. HERMES_DESKTOP_VARIANT=light builds "Hermes
-// Light", the remote-only client; everything else is full "Hermes".
+// value a variant owns. This Cozy fork brands the full desktop as Cozy while
+// retaining the same agent runtime and persistent Hermes backend data.
 //
 // Consumed at build time by electron-builder.config.cjs (packaging
 // identity). electron/product-identity.ts is the typed runtime accessor.
@@ -9,7 +9,7 @@
 'use strict'
 
 const variants = {
-  '': { display: 'Hermes', kebab: 'hermes', pascal: 'Hermes' },
+  '': { display: 'Cozy', kebab: 'cozy', pascal: 'Cozy' },
   light: {
     display: 'Hermes Light',
     kebab: 'hermes-light',
@@ -54,7 +54,8 @@ const displayName = buildCommit
 
 const kebabSuffix = buildCommit ? `-${buildCommit}` : canary ? '-canary' : ''
 const pascalSuffix = buildCommit ? `Commit${buildCommit}` : canary ? 'Canary' : ''
-const cliName = `${light ? 'hermes-light' : 'hermes'}${kebabSuffix}`
+const cliBaseName = light ? 'hermes-light' : variant === 'bundled' ? 'hermes' : name.kebab
+const cliName = `${cliBaseName}${kebabSuffix}`
 if (store && (canary || buildCommit)) {
   throw new Error('Store packaging is only eligible for stable releases')
 }
@@ -66,7 +67,7 @@ const identity = {
   store,
   light,
   displayName,
-  appId: `com.nousresearch.${name.kebab}${kebabSuffix}`,
+  appId: `${name.kebab === 'cozy' ? 'com.cozyassistant' : 'com.nousresearch'}.${name.kebab}${kebabSuffix}`,
   // Store and commit builds do not publish a release feed.
   channel: store || buildCommit ? null : light ? (canary ? 'light-canary' : 'light') : (canary ? 'canary' : 'latest'),
   appNamePascal: `${name.pascal}${pascalSuffix}`,
