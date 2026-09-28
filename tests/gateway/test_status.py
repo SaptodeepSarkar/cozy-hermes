@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 import threading
 import time
 from pathlib import Path
@@ -1748,3 +1749,12 @@ def test_retained_gateway_state_keeps_watchdog_degraded_like_startup_failed():
     assert status.retained_gateway_state({**watchdog, "desired_state": "stopped"}) == "stopped"
     assert status.retained_gateway_state({"gateway_state": "degraded", "exit_reason": None}) == "stopped"
     assert status.retained_gateway_state({"gateway_state": "startup_failed", "exit_reason": "x"}) == "startup_failed"
+
+
+def test_launcher_started_gateway_persists_a_record_its_readers_accept(monkeypatch):
+    """#124029: under the published ``python -I -c <bootstrap>`` launcher sys.argv[0] is "-c";
+    the persisted record must still validate where the live command line is unreadable."""
+    monkeypatch.setattr(sys, "argv", ["-c", "gateway", "run", "--external-supervisor"])
+    record = status._build_pid_record()
+    assert status._record_looks_like_gateway(record)
+    assert record["argv"][1:] == ["gateway", "run", "--external-supervisor"]

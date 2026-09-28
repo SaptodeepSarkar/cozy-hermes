@@ -878,8 +878,14 @@ def _record_matches_live_gateway_pid(
 
 
 def _build_pid_record() -> dict:
+    argv = list(sys.argv)
+    if argv[:1] == ["-c"]:
+        # The published launcher runs the CLI in-process from ``python -I -c <bootstrap>``; the bare
+        # "-c" names no entry point, so readers validating this record alone could never match it.
+        # Persist what ``python -m hermes_cli.main`` records instead (#124029).
+        argv[0] = str(Path(__file__).resolve().parents[1] / "hermes_cli" / "main.py")
     return {
-        "pid": os.getpid(), "kind": _GATEWAY_KIND, "argv": list(sys.argv),
+        "pid": os.getpid(), "kind": _GATEWAY_KIND, "argv": argv,
         "start_time": _get_process_start_time(os.getpid()),
         # Scoped locks are machine-global; the owner's home lets a cross-profile
         # --replace place its takeover marker where the target will read it.
