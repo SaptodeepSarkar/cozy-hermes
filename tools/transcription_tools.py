@@ -381,6 +381,11 @@ def _transcribe_local(
             segments, info = model.transcribe(file_path, **transcribe_kwargs)
             segments = list(segments)
         transcript = _join_confident_segments(segments, local_cfg)
+        cleanup_config = local_cfg.get("v6_cleanup") or {}
+        if isinstance(cleanup_config, dict) and cleanup_config.get("enabled"):
+            from tools.transcription_v6_cleanup import cleanup_v6_transcript
+
+            transcript = cleanup_v6_transcript(transcript, cleanup_config)
         logger.info("Transcribed %s via local whisper (%s, lang=%s, %.1fs audio)",
                     Path(file_path).name, model_name, info.language, info.duration)
         _touch_transcription_time()

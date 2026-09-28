@@ -1168,8 +1168,19 @@ DEFAULT_CONFIG = {
         "cloud_trim_keep_ms": 300,  # how much of each pause survives (natural pacing)
         "local": {
             "model": "base",  # tiny, base, small, medium, large-v3
+            "device": "auto",  # cpu, cuda, mps, or auto
+            "compute_type": "auto",  # ctranslate2 compute type; auto follows the model/device
             "language": "",  # auto-detect; set "en", "es", ... to force
             "initial_prompt": "",
+            "v6_cleanup": {
+                "enabled": False,
+                "python": "",
+                "script": "",
+                "model": "",
+                "adapter": "",
+                "startup_timeout_seconds": 90,
+                "request_timeout_seconds": 30,
+            },
             # Anti-hallucination (faster-whisper decodes junk from silence). vad: Silero filter
             # (false = raw audio, for music/ambient). A segment is dropped only if no_speech_prob
             # ABOVE no_speech_prob_threshold AND avg_logprob BELOW logprob_threshold.

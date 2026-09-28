@@ -19,9 +19,11 @@ set -e
 # pm.cli directly and never select it.
 runtime_only=false
 test_environment="--test-environment"
+runtime_extras=""
 for option in "$@"; do
     case "$option" in
         --runtime-only) runtime_only=true ;;
+        --runtime-extras=*) runtime_extras="${option#--runtime-extras=}" ;;
         --test-environment|--test-environment=*) test_environment="$option" ;;
         *) printf 'Unknown setup option: %s\n' "$option" >&2; exit 2 ;;
     esac
@@ -176,6 +178,10 @@ boot_py="${boot_py%$'\r'}"
 # Activation trusts the recorded tool digest; a direct setup re-checks it
 # (setup-hermes.ps1 draws the same line).
 pm_args=("$test_environment")
+[ -n "$runtime_extras" ] && IFS=',' read -r -a _runtime_extra_names <<< "$runtime_extras"
+for extra in ${_runtime_extra_names[@]-}; do
+  [ -n "$extra" ] && pm_args+=(--extra "$extra")
+done
 [ "$runtime_only" = true ] && pm_args+=(--trust-recorded)
 if ! "$boot_py" -m pm.cli install "${pm_args[@]}"; then
     echo -e "${RED}✗${NC} pm install failed — see output above."
