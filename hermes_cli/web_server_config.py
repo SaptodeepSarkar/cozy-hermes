@@ -111,7 +111,7 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     },
     "wake_word.provider": _select(
         "Wake engine. Auto selects a platform-supported engine; Porcupine requires PORCUPINE_ACCESS_KEY.",
-        "auto", *_PROVIDER_PREFERENCE,
+        "auto", *_PROVIDER_PREFERENCE, "livekit",
     ),
     "tts.provider": _select(
         "Text-to-speech provider",

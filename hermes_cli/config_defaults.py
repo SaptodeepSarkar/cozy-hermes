@@ -1289,6 +1289,10 @@ DEFAULT_CONFIG = {
             # built-in keyword ("jarvis", "computer", ...) or path to a custom .ppn
             "keyword": "jarvis",
         },
+        "livekit": {
+            # Empty uses HERMES_HOME/wakewords/hey_cozy.onnx.
+            "model": "",
+        },
     },
 
     "human_delay": {"mode": "off", "min_ms": 800, "max_ms": 2500},

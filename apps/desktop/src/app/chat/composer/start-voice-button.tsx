@@ -36,16 +36,21 @@ export function StartVoiceButton({
       <Tip label={engine ? `${label} — ${engine}` : label} placement="control">
         <Button
           aria-label={label}
-          className={cn(PRIMARY_ICON_BTN, engine && 'rounded-r-none')}
+          className={cn(
+            PRIMARY_ICON_BTN,
+            'h-(--composer-control-size) w-auto gap-2 px-3 text-xs font-medium',
+            engine && 'rounded-r-none'
+          )}
           disabled={disabled}
           onClick={() => {
             triggerHaptic('open')
             onStart()
           }}
-          size="icon"
+          size="sm"
           type="button"
         >
           <AudioLines className={iconSize.sm} />
+          <span>{label}</span>
         </Button>
       </Tip>
       {engine ? (

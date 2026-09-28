@@ -110,11 +110,13 @@ def test_build_engine_dispatch(monkeypatch):
     monkeypatch.setattr(ww, "_OpenWakeWordEngine", lambda cfg: "oww")
     monkeypatch.setattr(ww, "_PorcupineEngine", lambda cfg: "pv")
     monkeypatch.setattr(ww, "_SherpaKwsEngine", lambda cfg: "sherpa")
+    monkeypatch.setattr(ww, "_LiveKitEngine", lambda cfg: "livekit")
     expected = {"openwakeword": "oww", "porcupine": "pv", "sherpa": "sherpa"}[ww._provider({})]
     assert ww._build_engine(ww.load_wake_word_config()) == expected
     assert ww._build_engine({"provider": "auto"}) == expected
     assert ww._build_engine({"provider": "openwakeword"}) == "oww"
     assert ww._build_engine({"provider": "porcupine"}) == "pv"
+    assert ww._build_engine({"provider": "livekit"}) == "livekit"
     with pytest.raises(ValueError):
         ww._build_engine({"provider": "bogus"})
 
@@ -128,7 +130,46 @@ def test_engine_classes_are_owned_by_the_extracted_module():
     assert ww._Engine is engines._Engine
     assert ww._OpenWakeWordEngine is engines._OpenWakeWordEngine
     assert ww._SherpaKwsEngine is engines._SherpaKwsEngine
+    assert ww._LiveKitEngine is engines._LiveKitEngine
     assert ww._PorcupineEngine is engines._PorcupineEngine
+
+
+def test_livekit_engine_requires_two_adjacent_scores():
+    from collections import deque
+
+    from tools.wake_word_engines import _LiveKitEngine
+
+    class FakeNumpy:
+        int16 = object()
+
+        @staticmethod
+        def asarray(frame, dtype=None):
+            return frame
+
+        @staticmethod
+        def concatenate(frames):
+            return tuple(frames)
+
+    class FakeModel:
+        def __init__(self):
+            self.scores = iter((0.42, 0.24, 0.40, 0.41))
+
+        def predict(self, _window):
+            return {"hey_cozy": next(self.scores)}
+
+    engine = object.__new__(_LiveKitEngine)
+    engine._np = FakeNumpy()
+    engine._frames = deque(maxlen=engine._WINDOW_FRAMES)
+    engine._frame_count = 0
+    engine._threshold = 0.35
+    engine._confirm_needed = 2
+    engine._confirm_streak = 0
+    engine._model = FakeModel()
+    engine._name = "hey_cozy"
+
+    results = [engine.process([0] * 1280) for _ in range(32)]
+    assert not any(results[:31])
+    assert results[-1] is True
 
 
 def test_engine_construction_ensures_audio_io_only_for_local_capture(monkeypatch, tmp_path):

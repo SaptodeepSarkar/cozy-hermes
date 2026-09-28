@@ -351,6 +351,7 @@ wake-sherpa = [
   "pypinyin==0.55.0",
 ]
 wake-porcupine = ["pvporcupine==4.0.3"]
+wake-livekit = ["livekit-wakeword==0.2.1"]
 # Google Chat service account push (gateway/platforms/google_chat) — pubsub
 # subscriber for the Chat API's Cloud Pub/Sub delivery.
 # grpcio (pubsub's native transitive) has no win_arm64 wheel, so win32-arm64

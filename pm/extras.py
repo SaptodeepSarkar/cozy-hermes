@@ -38,6 +38,7 @@ ANCHORS: dict[str, str | tuple[str, ...]] = {
     "wake": "pyopen_wakeword",
     "wake-openwakeword": "pyopen_wakeword",
     "wake-sherpa": "sherpa_onnx",
+    "wake-livekit": "livekit.wakeword",
     "wake-porcupine": "pvporcupine",
     "fal": "fal_client",
     "honcho": "honcho",

@@ -26,6 +26,7 @@ from typing import Any, Callable, Dict, Optional
 # _PROVIDERS names on THIS module so a test (or plugin) can swap one engine.
 from tools.wake_word_engines import (  # noqa: F401
     _Engine,
+    _LiveKitEngine,
     _OpenWakeWordEngine,
     _PorcupineEngine,
     _SherpaKwsEngine,
@@ -55,6 +56,7 @@ _SILENCE_ALERT_SECONDS = 10
 # Unknown providers probe as openwakeword but fail to build.
 _PROVIDERS: Dict[str, tuple[str, str]] = {
     "porcupine": ("_PorcupineEngine", "wake-porcupine"),
+    "livekit": ("_LiveKitEngine", "wake-livekit"),
     **{k: ("_SherpaKwsEngine", "wake-sherpa") for k in ("sherpa", "sherpa-onnx", "kws", "open")},
     **{k: ("_OpenWakeWordEngine", "wake-openwakeword") for k in ("openwakeword", "oww", "local")},
 }
@@ -359,6 +361,8 @@ def check_wake_word_requirements(cfg: Optional[Dict[str, Any]] = None, *,
     provider = _provider(cfg, supported=supported)
     if provider == "porcupine":
         feature = "wake-porcupine"
+    elif provider == "livekit":
+        feature = "wake-livekit"
     elif provider in ("sherpa", "sherpa-onnx", "kws", "open"):
         feature = "wake-sherpa"
     else:
@@ -383,7 +387,7 @@ def check_wake_word_requirements(cfg: Optional[Dict[str, Any]] = None, *,
     hint = ""
 
     if not platform_ok:
-        alternatives = [name for name in ("sherpa", "porcupine")
+        alternatives = [name for name in ("sherpa", "porcupine", "livekit")
                         if supported(_PROVIDERS[name][1])]
         hint = f"The {provider} wake engine is not supported on this platform."
         if alternatives:

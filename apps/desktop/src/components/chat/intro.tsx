@@ -146,7 +146,7 @@ function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
   return copies[Math.abs(seed) % copies.length] || FALLBACK_COPY[0]
 }
 
-const WORDMARK = 'HERMES AGENT'
+const WORDMARK = 'COZY'
 
 function resolveCopy(personality?: string, seed?: number): IntroCopy {
   const personalityKey = normalizeKey(personality)
@@ -179,6 +179,9 @@ export function Intro({ personality, seed }: IntroProps) {
         <Wordmark className="mb-1" text={WORDMARK} />
 
         <p className="m-0 text-center leading-normal tracking-tight">{body}</p>
+        <p className="mt-3 text-center text-xs leading-normal tracking-tight text-(--ui-text-tertiary)">
+          Say “Hey Cozy” or choose Start voice below. You can always type instead.
+        </p>
       </div>
     </div>
   )

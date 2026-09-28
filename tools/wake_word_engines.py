@@ -14,6 +14,7 @@ audio libraries.
 
 from __future__ import annotations
 
+from collections import deque
 import logging
 import os
 from contextlib import suppress
@@ -73,6 +74,69 @@ def _looks_like_path(value: str) -> bool:
 def _sub(cfg: Dict[str, Any], key: str) -> Dict[str, Any]:
     sub = cfg.get(key)
     return sub if isinstance(sub, dict) else {}
+
+
+class _LiveKitEngine(_Engine):
+    """Run a trained LiveKit ONNX classifier on a two-second rolling window.
+
+    The 160 ms inference cadence keeps the stateless feature extractors off the
+    80 ms capture hot path; a short consecutive-score gate rejects isolated
+    spikes without demanding that a short phrase hold a high score for 240 ms.
+    """
+
+    feature, section = "wake-livekit", "livekit"
+    frame_length = 1280
+    _WINDOW_FRAMES = 25  # 2 seconds at 16 kHz, 80 ms capture frames.
+    _INFERENCE_EVERY_FRAMES = 2
+
+    def _build(self, cfg, sub, ww) -> None:
+        from hermes_constants import get_hermes_home
+        from livekit.wakeword import WakeWordModel
+
+        configured = str(sub.get("model") or "").strip()
+        model_path = Path(configured).expanduser() if configured else (
+            get_hermes_home() / "wakewords" / "hey_cozy.onnx"
+        )
+        if not model_path.is_file():
+            raise FileNotFoundError(
+                f"Cozy wake model not found: {model_path}. Copy or train hey_cozy.onnx first."
+            )
+
+        self._np = __import__("numpy")
+        self._frames = deque(maxlen=self._WINDOW_FRAMES)
+        self._frame_count = 0
+        self._threshold = ww._sensitivity(cfg)
+        self._confirm_needed = ww._confirmation_frames(cfg)
+        self._confirm_streak = 0
+        self._model = WakeWordModel(models=[model_path])
+        self._name = next(iter(self._model._classifiers))
+
+    def process(self, frame) -> bool:
+        self._frames.append(self._np.asarray(frame, dtype=self._np.int16))
+        self._frame_count += 1
+        if len(self._frames) < self._WINDOW_FRAMES or self._frame_count % self._INFERENCE_EVERY_FRAMES:
+            return False
+
+        window = self._np.concatenate(tuple(self._frames))
+        score = float(self._model.predict(window).get(self._name, 0.0))
+        if score < self._threshold:
+            self._confirm_streak = 0
+            return False
+
+        self._confirm_streak += 1
+        if self._confirm_streak < self._confirm_needed:
+            return False
+        self._confirm_streak = 0
+        return True
+
+    def reset(self) -> None:
+        self._frames.clear()
+        self._frame_count = 0
+        self._confirm_streak = 0
+
+    def close(self) -> None:
+        self.reset()
+        self._model.close()
 
 
 class _OpenWakeWordEngine(_Engine):
