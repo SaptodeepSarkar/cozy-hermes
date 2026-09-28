@@ -1593,7 +1593,16 @@ export function ChatSidebar({
       data-tour="sessions-sidebar"
     >
       <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5">
-        <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--titlebar-height)+0.375rem)]">
+        <div className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-[calc(var(--titlebar-height)+0.5rem)]">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <Codicon name="mic" size="1rem" />
+          </span>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold leading-tight">Cozy</div>
+            <div className="text-[0.625rem] uppercase tracking-[0.12em] text-muted-foreground">Your desktop assistant</div>
+          </div>
+        </div>
+        <SidebarGroup className="shrink-0 p-0 pb-2 pt-0">
           <SidebarGroupContent>
             <SidebarMenu className="gap-px">
               {navItems.map(item => {

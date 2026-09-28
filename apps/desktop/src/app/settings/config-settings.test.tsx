@@ -80,14 +80,14 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-function renderConfigSettings(activeSectionId = 'safety') {
+function renderConfigSettings(activeSectionId = 'safety', subpage?: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const importInputRef = createRef<HTMLInputElement>()
 
   render(
     <MemoryRouter>
       <QueryClientProvider client={client}>
-        <ConfigSettings activeSectionId={activeSectionId} importInputRef={importInputRef} />
+        <ConfigSettings activeSectionId={activeSectionId} importInputRef={importInputRef} subpage={subpage} />
       </QueryClientProvider>
     </MemoryRouter>
   )
@@ -96,6 +96,35 @@ function renderConfigSettings(activeSectionId = 'safety') {
 }
 
 describe('ConfigSettings autosave', () => {
+  it('shows editable Cozy V6 STT and cleanup model paths on Voice → Transcription', async () => {
+    getHermesConfigRecord.mockResolvedValue({
+      stt: {
+        enabled: true,
+        provider: 'local',
+        local: {
+          model: '/models/archflow-v6-ct2',
+          device: 'cuda',
+          compute_type: 'int8_float16',
+          v6_cleanup: {
+            enabled: true,
+            python: '/archflow/.venv/bin/python',
+            script: '/archflow/llm-server.py',
+            model: '/models/cleanup-base',
+            adapter: '/models/cleanup-v6'
+          }
+        }
+      }
+    })
+    getHermesConfigSchema.mockResolvedValue({ fields: {} })
+
+    renderConfigSettings('voice', 'transcription')
+
+    expect(await screen.findByText('Cozy voice models')).toBeTruthy()
+    expect(screen.getByDisplayValue('/models/archflow-v6-ct2')).toBeTruthy()
+    expect(screen.getByDisplayValue('/models/cleanup-v6')).toBeTruthy()
+    expect(screen.getByText('ArchFlow V6')).toBeTruthy()
+  })
+
   it('sends a later revert instead of diffing it away against the stale page-load baseline', async () => {
     getHermesConfigRecord.mockResolvedValue({ checkpoints: { enabled: false }, other: 'untouched' })
 

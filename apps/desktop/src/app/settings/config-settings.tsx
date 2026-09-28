@@ -49,7 +49,7 @@ import { MemoryConnect } from './memory/connect'
 import { ProviderConfigPanel } from './memory/provider-config-panel'
 import { ModelSettings, ModelSettingsSkeleton } from './model-settings'
 import { PoolLimitsSetting } from './pool-limits-setting'
-import { EmptyState, ListRow, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
+import { EmptyState, ListRow, Pill, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
 import { SettingsProfileScope } from './profile-scope'
 import { QuickEntrySettings } from './quick-entry-settings'
 import { SETTING_IDS, settingElementId } from './settings-manifest'
@@ -427,9 +427,24 @@ function ConfigSettingsInner({
   }
 
   const visibleFields = activeSectionId === 'voice' ? fields.filter(([key]) => voiceFieldVisible(key, config)) : fields
+  const isCozyTranscriptionPage = activeSectionId === 'voice' && subpage === 'transcription'
+  const cozyVoiceKeys = new Set([
+    'stt.provider',
+    'stt.local.model',
+    'stt.local.device',
+    'stt.local.compute_type',
+    'stt.local.v6_cleanup.enabled',
+    'stt.local.v6_cleanup.python',
+    'stt.local.v6_cleanup.script',
+    'stt.local.v6_cleanup.model',
+    'stt.local.v6_cleanup.adapter'
+  ])
+  const cozyTranscriptionFields = isCozyTranscriptionPage
+    ? visibleFields.filter(([key]) => !cozyVoiceKeys.has(key))
+    : visibleFields
 
   const showEmptyState =
-    visibleFields.length === 0 &&
+    (isCozyTranscriptionPage ? cozyTranscriptionFields.length : visibleFields.length) === 0 &&
     (subpage === undefined
       ? activeSectionId !== 'chat'
       : !showModelSettings && !showDesktopSettings && !showAttachments)
@@ -472,11 +487,82 @@ function ConfigSettingsInner({
       {activeSectionId === 'voice' ? (
         <ListRow description={c.voiceShortcutHintDesc} title={c.voiceShortcutHintTitle} />
       ) : null}
+      {isCozyTranscriptionPage ? (
+        <section className="mb-6 rounded-xl border border-(--ui-stroke-secondary) bg-(--ui-surface-secondary) p-4">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-semibold">Cozy voice models</h2>
+            <Pill tone="success">ArchFlow V6</Pill>
+          </div>
+          <p className="mb-4 text-xs text-muted-foreground">
+            Cozy uses your local ArchFlow V6 speech recognizer and transcript-cleanup adapter. Paths below are saved
+            with your voice settings and can be changed to another local export.
+          </p>
+          <div className="grid gap-1">
+            <CozyModelPathField
+              description="CTranslate2 model directory used by local faster-whisper."
+              label="STT model directory"
+              onChange={value => updateConfig(setNested(config, 'stt.local.model', value))}
+              value={String(getNested(config, 'stt.local.model') ?? '')}
+            />
+            <CozyModelPathField
+              description="Inference device, usually auto or cuda."
+              label="STT device"
+              onChange={value => updateConfig(setNested(config, 'stt.local.device', value))}
+              value={String(getNested(config, 'stt.local.device') ?? 'auto')}
+            />
+            <CozyModelPathField
+              description="CTranslate2 compute type, for example int8_float16."
+              label="STT compute type"
+              onChange={value => updateConfig(setNested(config, 'stt.local.compute_type', value))}
+              value={String(getNested(config, 'stt.local.compute_type') ?? 'int8_float16')}
+            />
+            <CozyModelPathField
+              description="Python interpreter from ArchFlow's cleanup environment."
+              label="Cleanup Python"
+              onChange={value => updateConfig(setNested(config, 'stt.local.v6_cleanup.python', value))}
+              value={String(getNested(config, 'stt.local.v6_cleanup.python') ?? '')}
+            />
+            <CozyModelPathField
+              description="ArchFlow's local HTTP sidecar entry point."
+              label="Cleanup server script"
+              onChange={value => updateConfig(setNested(config, 'stt.local.v6_cleanup.script', value))}
+              value={String(getNested(config, 'stt.local.v6_cleanup.script') ?? '')}
+            />
+            <CozyModelPathField
+              description="Base model directory required by the V6 adapter."
+              label="Cleanup base model"
+              onChange={value => updateConfig(setNested(config, 'stt.local.v6_cleanup.model', value))}
+              value={String(getNested(config, 'stt.local.v6_cleanup.model') ?? '')}
+            />
+            <CozyModelPathField
+              description="The selected V6 transcript-cleanup adapter directory."
+              label="Cleanup adapter"
+              onChange={value => updateConfig(setNested(config, 'stt.local.v6_cleanup.adapter', value))}
+              value={String(getNested(config, 'stt.local.v6_cleanup.adapter') ?? '')}
+            />
+          </div>
+          <div className="mt-3 grid gap-1">
+            <ConfigField
+              enumOptions={['local', 'groq', 'openai', 'xai', 'elevenlabs']}
+              onChange={value => updateConfig(setNested(config, 'stt.provider', value))}
+              schema={{ description: 'Select Cozy’s speech-to-text backend.', options: [], type: 'select' }}
+              schemaKey="stt.provider"
+              value={String(getNested(config, 'stt.provider') ?? 'local')}
+            />
+            <ToggleRow
+              checked={Boolean(getNested(config, 'stt.local.v6_cleanup.enabled'))}
+              description="Clean recognized text locally before it is sent to the agent. If cleanup fails, Cozy keeps the raw transcript."
+              label="V6 transcript cleanup"
+              onChange={enabled => updateConfig(setNested(config, 'stt.local.v6_cleanup.enabled', enabled))}
+            />
+          </div>
+        </section>
+      ) : null}
       {showEmptyState ? (
         <EmptyState description={c.emptyDesc} title={c.emptyTitle} />
-      ) : visibleFields.length === 0 ? null : (
+      ) : cozyTranscriptionFields.length === 0 ? null : (
         <div className="grid gap-1">
-          {visibleFields.map(([key, field]) => (
+          {cozyTranscriptionFields.map(([key, field]) => (
             <div className="scroll-mt-6 rounded-lg" id={`setting-field-${key}`} key={key}>
               <ConfigField
                 descriptionExtra={
@@ -507,6 +593,29 @@ function ConfigSettingsInner({
         </div>
       )}
     </>
+  )
+}
+
+function CozyModelPathField({
+  description,
+  label,
+  onChange,
+  value
+}: {
+  description: string
+  label: string
+  onChange: (value: string) => void
+  value: string
+}) {
+  const schema: ConfigFieldSchema = { description, type: 'string' }
+
+  return (
+    <ConfigField
+      onChange={next => onChange(String(next ?? ''))}
+      schema={schema}
+      schemaKey={`cozy.voice.${label.toLowerCase().replaceAll(' ', '_')}`}
+      value={value}
+    />
   )
 }
 

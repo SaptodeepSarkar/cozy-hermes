@@ -1,9 +1,9 @@
 {
   "name": "hermes",
-  "productName": "Hermes",
+  "productName": "Cozy",
   "private": true,
   "version": "0.0.0",
-  "description": "Native desktop shell for Hermes Agent.",
+  "description": "Cozy voice-first desktop assistant.",
   "author": "Nous Research",
   "repository": {
     "type": "git",
