@@ -61,6 +61,7 @@ test('resolving a packaged icon never probes a path inside app.asar', () => {
   const resources = path.join('/opt', 'Hermes', 'resources')
   const appRoot = path.join(resources, 'app.asar')
   const unpackedPathFor = (p: string) => p.replace(/app\.asar(?=$|[\\/])/, 'app.asar.unpacked')
+  const unpackedCozyIcon = path.join(unpackedPathFor(appRoot), 'assets', 'cozy-icon.png')
   const unpackedIcon = path.join(unpackedPathFor(appRoot), 'dist', 'apple-touch-icon.png')
 
   const resourcesIco = path.join(resources, 'icon.ico')
@@ -69,6 +70,7 @@ test('resolving a packaged icon never probes a path inside app.asar', () => {
   const shipped = new Set([
     resourcesIco,
     path.join(appRoot, 'assets', 'icon.ico'),
+    unpackedCozyIcon,
     path.join(appRoot, 'public', 'apple-touch-icon.png'),
     path.join(appRoot, 'dist', 'apple-touch-icon.png'),
     unpackedIcon
@@ -86,7 +88,7 @@ test('resolving a packaged icon never probes a path inside app.asar', () => {
       }
     )
 
-    assert.equal(picked, isWindows ? resourcesIco : unpackedIcon)
+    assert.equal(picked, isWindows ? resourcesIco : unpackedCozyIcon)
     assert.deepEqual(
       probed.filter(p => p.startsWith(appRoot + path.sep)),
       [],
@@ -103,6 +105,7 @@ test('appIconCandidates keeps the documented precedence ladder', () => {
   })
 
   assert.deepEqual(mac, [
+    path.join('/Applications/Hermes.app/Contents/Resources.unpacked', 'assets', 'cozy-icon.png'),
     path.join('/Applications/Hermes.app/Contents/Resources.unpacked', 'dist', 'apple-touch-icon.png'),
     path.join('/Applications/Hermes.app/Contents/Resources', 'public', 'apple-touch-icon.png'),
     path.join('/Applications/Hermes.app/Contents/Resources', 'dist', 'apple-touch-icon.png')
@@ -118,6 +121,7 @@ test('appIconCandidates keeps the documented precedence ladder', () => {
 
   const isIco = win.map(c => c.endsWith('.ico'))
   assert.ok(isIco.lastIndexOf(true) < isIco.indexOf(false), 'every .ico rung precedes the PNG ladder')
+  assert.equal(win[2], path.join('C:\\app\\unpacked', 'assets', 'cozy-icon.png'))
   assert.equal(
     win[0],
     path.join('C:\\resources', 'icon.ico'),

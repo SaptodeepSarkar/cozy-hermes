@@ -83,7 +83,7 @@ module.exports = {
   // so it can't collide with the out-of-store MSIX of the same tag/arch, and
   // the release pipeline can keep the two apart.
   artifactName: `${store ? 'Store-' : ''}${artifactNamePascal}-\${version}-\${os}-\${arch}.\${ext}`,
-  icon: 'assets/icon',
+  icon: 'assets/cozy-icon',
   // The electron-updater feed. CI builds set CLOUDFLARE_R2_PUBLIC_URL (the R2
   // public bucket / custom domain) and publish there — the feed yml, blockmaps
   // and installers all live in the same flat R2 bucket, and electron-updater
@@ -135,7 +135,7 @@ module.exports = {
     }
   ],
   asar: {
-    unpack: ['**/*.node', '**/prebuilds/**', 'dist/**']
+    unpack: ['**/*.node', '**/prebuilds/**', 'dist/**', 'assets/cozy-icon.png']
   },
   mac: {
     // The afterSign hook owns notarization, including keychain-profile builds.

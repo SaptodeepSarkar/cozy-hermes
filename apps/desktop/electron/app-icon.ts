@@ -81,6 +81,7 @@ export function appIconCandidates(opts: {
     // The unpacked on-disk copy first (dist/** is asarUnpack'ed), as resolveWebDist() does: statting
     // any path inside app.asar goes through Electron's asar fs.Stats shim, which emits Node's DEP0180
     // on every packaged launch (#96857). In a dev tree unpackedPathFor is the identity.
+    path.join(unpackedPathFor(appRoot), 'assets', 'cozy-icon.png'),
     path.join(unpackedPathFor(appRoot), 'dist', 'apple-touch-icon.png'),
     path.join(appRoot, 'public', 'apple-touch-icon.png'),
     path.join(appRoot, 'dist', 'apple-touch-icon.png')
