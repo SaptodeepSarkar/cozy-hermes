@@ -28,7 +28,7 @@ def xdg_home(tmp_path, monkeypatch) -> Path:
 
 def _make_project(tmp_path: Path) -> Path:
     root = tmp_path / "hermes-agent"
-    icon = root / "apps" / "desktop" / "assets" / "icon.png"
+    icon = root / "apps" / "desktop" / "assets" / "cozy-icon.png"
     icon.parent.mkdir(parents=True)
     icon.write_bytes(b"\x89PNG fake")
     return root
@@ -113,12 +113,12 @@ def test_install_prefers_themed_icon_from_hicolor(tmp_path, xdg_home, monkeypatc
     entry = lde.install_desktop_entry(root)
 
     values = _parse(entry.read_text(encoding="utf-8"))
-    assert values["Icon"] == "hermes"
+    assert values["Icon"] == "cozy"
 
     # And the icon really landed in the hicolor tree: the fixture icon is
     # a fake PNG (no valid IHDR), so the size is unknown and the icon
     # lands under 256x256/ (indexed; never scalable, which is SVG-only).
-    dest = xdg_home / "icons" / "hicolor" / "256x256" / "apps" / "hermes.png"
+    dest = xdg_home / "icons" / "hicolor" / "256x256" / "apps" / "cozy.png"
     assert dest.is_file()
     assert dest.read_bytes() == lde.icon_path(root).read_bytes()
 
@@ -174,6 +174,18 @@ def test_exec_falls_back_to_interpreter_module(tmp_path, xdg_home, monkeypatch):
 
     assert exec_line.endswith("-m hermes_cli.main desktop")
     assert Path(exec_line.split(" ")[0]).is_absolute()
+
+
+def test_exec_prefers_cozy_checkout_launcher(tmp_path, xdg_home, monkeypatch):
+    root = _make_project(tmp_path)
+    launcher = root.parent / "cozy"
+    launcher.write_text("#!/usr/bin/env bash\n", encoding="utf-8")
+    monkeypatch.setattr(
+        "hermes_cli.relaunch.resolve_hermes_bin",
+        lambda: pytest.fail("Cozy checkout should not resolve the Hermes launcher"),
+    )
+
+    assert lde.resolve_exec_command(root) == f'{launcher.resolve()} --desktop'
 
 
 # #90292: the shell installer's bash wrapper makes argv[0] the repo `hermes`
@@ -790,8 +802,8 @@ def test_install_without_source_icon_uses_themed_name(tmp_path, xdg_home, monkey
     entry = lde.install_desktop_entry(root)
 
     # A broken absolute path renders as no icon. The themed name resolves
-    # when Hermes is installed some other way.
-    assert _parse(entry.read_text(encoding="utf-8"))["Icon"] == "hermes"
+    # when the Cozy icon asset is unavailable.
+    assert _parse(entry.read_text(encoding="utf-8"))["Icon"] == "cozy"
 
 
 @pytest.mark.platforms("macos")
@@ -1180,8 +1192,8 @@ def test_install_icon_handles_truncated_png_header(tmp_path, xdg_home, monkeypat
     entry = lde.install_desktop_entry(root)
 
     values = _parse(entry.read_text(encoding="utf-8"))
-    assert values["Icon"] == "hermes"
-    dest = xdg_home / "icons" / "hicolor" / "256x256" / "apps" / "hermes.png"
+    assert values["Icon"] == "cozy"
+    dest = xdg_home / "icons" / "hicolor" / "256x256" / "apps" / "cozy.png"
     assert dest.is_file()
 
 
@@ -1208,9 +1220,9 @@ def test_install_places_1024_png_in_256x256_not_scalable(
     entry = lde.install_desktop_entry(root)
     values = _parse(entry.read_text(encoding="utf-8"))
 
-    dest = xdg_home / "icons" / "hicolor" / "256x256" / "apps" / "hermes.png"
-    stale = xdg_home / "icons" / "hicolor" / "scalable" / "apps" / "hermes.png"
-    assert values["Icon"] == "hermes"
+    dest = xdg_home / "icons" / "hicolor" / "256x256" / "apps" / "cozy.png"
+    stale = xdg_home / "icons" / "hicolor" / "scalable" / "apps" / "cozy.png"
+    assert values["Icon"] == "cozy"
     assert dest.is_file()
     assert dest.read_bytes() == lde.icon_path(root).read_bytes()
     assert not stale.exists()
@@ -1223,13 +1235,13 @@ def test_install_removes_stale_scalable_png(tmp_path, xdg_home, monkeypatch):
     lde.icon_path(root).write_bytes(_png_ihdr(1024, 1024))
     _stub_install(tmp_path, monkeypatch)
 
-    stale = xdg_home / "icons" / "hicolor" / "scalable" / "apps" / "hermes.png"
+    stale = xdg_home / "icons" / "hicolor" / "scalable" / "apps" / "cozy.png"
     stale.parent.mkdir(parents=True)
     stale.write_bytes(b"old scalable png")
 
     lde.install_desktop_entry(root)
 
-    dest = xdg_home / "icons" / "hicolor" / "256x256" / "apps" / "hermes.png"
+    dest = xdg_home / "icons" / "hicolor" / "256x256" / "apps" / "cozy.png"
     assert dest.is_file()
     assert not stale.exists()
 
@@ -1241,10 +1253,10 @@ def test_install_exact_48_png_uses_48x48_dir(tmp_path, xdg_home, monkeypatch):
 
     lde.install_desktop_entry(root)
 
-    dest = xdg_home / "icons" / "hicolor" / "48x48" / "apps" / "hermes.png"
+    dest = xdg_home / "icons" / "hicolor" / "48x48" / "apps" / "cozy.png"
     assert dest.is_file()
     assert not (
-        xdg_home / "icons" / "hicolor" / "scalable" / "apps" / "hermes.png"
+        xdg_home / "icons" / "hicolor" / "scalable" / "apps" / "cozy.png"
     ).exists()
 
 
@@ -1266,9 +1278,9 @@ def test_install_resizes_decodable_png_to_panel_sizes(
 
     lde.install_desktop_entry(root)
 
-    dest_24 = xdg_home / "icons" / "hicolor" / "24x24" / "apps" / "hermes.png"
-    dest_256 = xdg_home / "icons" / "hicolor" / "256x256" / "apps" / "hermes.png"
-    stale = xdg_home / "icons" / "hicolor" / "scalable" / "apps" / "hermes.png"
+    dest_24 = xdg_home / "icons" / "hicolor" / "24x24" / "apps" / "cozy.png"
+    dest_256 = xdg_home / "icons" / "hicolor" / "256x256" / "apps" / "cozy.png"
+    stale = xdg_home / "icons" / "hicolor" / "scalable" / "apps" / "cozy.png"
     assert dest_24.is_file()
     assert dest_256.is_file()
     assert not stale.exists()

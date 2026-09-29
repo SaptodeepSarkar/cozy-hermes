@@ -58,7 +58,7 @@ def desktop_entry_path() -> Path:
 
 
 def icon_path(project_root: Path) -> Path:
-    return project_root / "apps" / "desktop" / "assets" / "icon.png"
+    return project_root / "apps" / "desktop" / "assets" / "cozy-icon.png"
 
 
 def _running_interpreter() -> str:
@@ -112,10 +112,18 @@ def _running_interpreter_fallback() -> str:
 
 
 def resolve_exec_command(project_root: Optional[Path] = None) -> str:
-    """Build the absolute ``Exec=`` command line for ``hermes desktop``.
+    """Build the absolute desktop command line, preferring Cozy's sibling launcher.
 
-    Prefer the real ``hermes`` launcher; fall back to ``<python> -m hermes_cli.main desktop``.
+    Outside the Cozy checkout, prefer the real ``hermes`` launcher; fall back to
+    ``<python> -m hermes_cli.main desktop``.
     """
+    # Cozy is checked out beside the Hermes fork and owns the user-facing CLI. Prefer its
+    # wrapper when present so app-grid launches do not bypass Cozy branding/configuration.
+    if project_root is not None:
+        cozy_launcher = project_root.parent / "cozy"
+        if cozy_launcher.is_file():
+            return f"{_quote_exec_arg(str(cozy_launcher.resolve()))} --desktop"
+
     from hermes_cli.relaunch import resolve_hermes_bin
 
     bin_path = _resolve_hermes_bin_for_desktop_entry(resolve_hermes_bin, checkout_root=project_root)
@@ -508,7 +516,7 @@ def _hicolor_subdir(dimensions: Optional[tuple[int, int]]) -> str:
 
 
 def _hicolor_icon_dest(subdir: str) -> Path:
-    return _xdg_data_home() / "icons" / "hicolor" / subdir / "apps" / "hermes.png"
+    return _xdg_data_home() / "icons" / "hicolor" / subdir / "apps" / "cozy.png"
 
 
 def _remove_stale_scalable_icon() -> bool:
@@ -568,7 +576,7 @@ def _write_hicolor_pngs(files: dict[str, bytes]) -> bool:
 
 
 def _install_icon_to_hicolor(icon: Path) -> bool:
-    """Install the app icon into the user's hicolor tree so ``Icon=hermes`` resolves without an
+    """Install the app icon into the user's hicolor tree so ``Icon=cozy`` resolves without an
     absolute checkout path. Raster PNGs go to indexed fixed-size dirs, never ``scalable``."""
     try:
         raw = icon.read_bytes()
@@ -665,9 +673,9 @@ def install_desktop_entry(project_root: Path) -> Optional[Path]:
     # Prefer the themed name: the icon is COPIED into the hicolor tree, so the entry outlives the
     # checkout (an absolute Icon= path breaks when the checkout moves). Absolute path only when
     # the copy is impossible (read-only tree); themed name when the checkout has no icon at all.
-    icon_value = str(icon) if icon.is_file() else "hermes"
+    icon_value = str(icon) if icon.is_file() else "cozy"
     if icon.is_file() and _install_icon_to_hicolor(icon):
-        icon_value = "hermes"
+        icon_value = "cozy"
     exec_command = resolve_exec_command(project_root)
     contents = render_desktop_entry(exec_command, icon_value)
 
