@@ -172,8 +172,9 @@ def run_doctor(args):
     if getattr(args, 'ack', None):
         return _ack_advisory(args.ack)
     print()
+    brand = "Cozy" if os.environ.get("COZY_BRANDED") == "1" else "Hermes"
     for line in ("┌─────────────────────────────────────────────────────────┐",
-                 "│                 🩺 Hermes Doctor                        │",
+                 f"│                 🩺 {brand} Doctor                        │",
                  "└─────────────────────────────────────────────────────────┘"):
         print(color(line, Colors.CYAN))
     total = Finding()
